@@ -1,6 +1,7 @@
 package com.ronaldarias.ppmtool.web;
 
 import com.ronaldarias.ppmtool.domain.Project;
+import com.ronaldarias.ppmtool.services.MapValidationErrorService;
 import com.ronaldarias.ppmtool.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,9 @@ public class ProjectController {
     @Autowired
     private ProjectService projectService;
 
+    @Autowired
+    private MapValidationErrorService mapValidationErrorService;
+
     /**
      * @Valid sirve para obtener el error en el json de forma mas clara y detallada
      * @BindingResult analiza el objeto y determina si tiene o no errores
@@ -35,17 +39,9 @@ public class ProjectController {
     @PostMapping("")
     public ResponseEntity<?> createNewProject(@Valid @RequestBody Project project, BindingResult result) {
 
-        // en caso de error hago que el json q me devuelve tenga la estructura "field": "errormessage"
-        if (result.hasErrors()) {
-
-            Map<String, String> errorMap = new HashMap<>();
-
-            for (FieldError error : result.getFieldErrors()) {
-                errorMap.put(error.getField(), error.getDefaultMessage());
-            }
-
-            return new ResponseEntity<Map<String, String>>(errorMap, HttpStatus.BAD_REQUEST);
-        }
+        ResponseEntity<?> errorMap = mapValidationErrorService.MapValidationService(result);
+        if (errorMap != null)
+            return errorMap;
 
         projectService.saveOrUpdateProject(project);
         return new ResponseEntity<Project>(project, HttpStatus.CREATED);
